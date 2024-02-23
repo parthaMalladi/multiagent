@@ -182,7 +182,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
 
-        minValue = float('-inf')
+        minValue = float('inf')
         for action in gameState.getLegalActions(agentIndex):
             successor = gameState.generateSuccessor(agentIndex, action)
             if agentIndex == numGhosts:
@@ -205,7 +205,54 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        numGhosts = gameState.getNumAgents() - 1
+        return self.maximize(gameState, 1, numGhosts, float('-inf'), float('inf'))
+    
+    def maximize(self, gameState, depth, numGhosts, alpha, beta):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+
+        maxValue = float('-inf')
+        bestAction = Directions.STOP
+        
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            tempValue = self.minimize(successor, depth, 1, numGhosts, alpha, beta)
+            if maxValue < tempValue:
+                maxValue = tempValue
+                bestAction = action
+            
+            if maxValue > beta:
+                return maxValue
+            alpha = max(alpha, maxValue)
+            
+        if depth > 1:
+            return maxValue
+
+        return bestAction
+
+    def minimize(self, gameState, depth, agentIndex, numGhosts, alpha, beta):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        
+        minValue = float('inf')
+        
+        for action in gameState.getLegalActions(agentIndex):
+            successor = gameState.generateSuccessor(agentIndex, action)
+            if agentIndex == numGhosts:
+                if depth < self.depth:
+                    minValue = min(minValue, self.maximize(successor, depth + 1, numGhosts, alpha, beta))
+                else:
+                    minValue = min(minValue, self.evaluationFunction(successor))
+            else:
+                minValue = min(minValue, self.minimize(successor, depth, agentIndex + 1, numGhosts, alpha, beta))
+            
+            if minValue < alpha:
+                return minValue
+            
+            beta = min(beta, minValue)
+        
+        return minValue      
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
@@ -220,7 +267,48 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        numGhosts = gameState.getNumAgents() - 1
+        return self.maximize(gameState, 1, numGhosts)
+    
+    def maximize(self, gameState, depth, numGhosts):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        
+        maxValue = float('-inf')
+        bestAction = Directions.STOP
+        
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            tempValue = self.getExpectValue(successor, depth, 1, numGhosts)
+            
+            if maxValue < tempValue:
+                maxValue = tempValue
+                bestAction = action
+                
+        if depth > 1:
+            return maxValue
+        
+        return bestAction
+    
+    def getExpectValue(self, gameState, depth, agentIndex, numGhosts):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        
+        expectValue = 0
+        legalActions = gameState.getLegalActions(agentIndex)
+        successor_probability = 1.0 / len(legalActions)
+        
+        for action in legalActions:
+            successor = gameState.generateSuccessor(agentIndex, action)
+            if agentIndex == numGhosts:
+                if depth < self.depth:
+                    expectValue += successor_probability * self.maximize(successor, depth + 1, numGhosts)
+                else:
+                    expectValue += successor_probability * self.evaluationFunction(successor)
+            else:
+                expectValue += successor_probability * self.getExpectValue(successor, depth, agentIndex + 1, numGhosts)
+        
+        return expectValue
 
 def betterEvaluationFunction(currentGameState):
     """
