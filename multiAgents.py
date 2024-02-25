@@ -315,10 +315,72 @@ def betterEvaluationFunction(currentGameState):
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION:
+    I am just subtracting various values from the current game state's score. I reduce the score by a lot if there
+    are many power capsules on the board because I want pacman to be prioritize scaring the ghosts. I also reduce the
+    the score if there is a lot of food remaining on the board so that pacman keeps moving. I subtract the minimum distance
+    between pacman and food pellet because it makes pacman get a worse score if he is farther away from food, so
+    he will prioritize being near food pellets. I am also tracking the ghost positions and which ghosts are scared.
+    Pacman has a lower penalty if he is farther away from a ghost because I use reciprocal of the manhattan distance
+    and subtract it from the game state's score. I also penalize pacman for being far away from a scared ghost, which
+    will make pacman prioritize hunting ghosts when they are scared.
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    score = currentGameState.getScore()
+    pacman_position = currentGameState.getPacmanPosition()
+    food_positions = currentGameState.getFood().asList()
+    capsules_positions = currentGameState.getCapsules()
+    ghost_states = currentGameState.getGhostStates()
+    remaining_food = len(food_positions)
+    remaining_capsules = len(capsules_positions)
+    scared_ghosts = []
+    enemy_ghosts = []
+    enemy_ghost_positions = []
+    scared_ghosts_positions = []
+
+    closest_food = float('inf')
+    closest_enemy_ghost = float('inf')
+    closest_scared_ghost = float('inf')
+
+    distance_from_food = []
+    for food in food_positions:
+        distance_from_food.append(manhattanDistance(pacman_position, food))
+        
+    if len(distance_from_food) > 0:
+        closest_food = min(distance_from_food)
+        score -= closest_food
+
+    for ghost in ghost_states:
+        if ghost.scaredTimer > 0:
+            enemy_ghosts.append(ghost)
+        else:
+            scared_ghosts.append(ghost)
+
+    for enemy_ghost in enemy_ghosts:
+        enemy_ghost_positions.append(enemy_ghost.getPosition())
+
+    if len(enemy_ghost_positions) > 0:
+        distance_from_enemy_ghost = []
+        for enemy_ghost_position in enemy_ghost_positions:
+            distance_from_enemy_ghost.append(manhattanDistance(pacman_position, enemy_ghost_position))
+            
+        closest_enemy_ghost = min(distance_from_enemy_ghost)
+        score -= 3.0 * (1 / closest_enemy_ghost)
+
+    for scared_ghost in scared_ghosts:
+        scared_ghosts_positions.append(scared_ghost.getPosition())
+
+    if len(scared_ghosts_positions) > 0:
+        distance_from_scared_ghost = []
+        for scared_ghost_position in scared_ghosts_positions:
+            distance_from_scared_ghost.append(manhattanDistance(pacman_position, scared_ghost_position))
+            
+        closest_scared_ghost = min(distance_from_scared_ghost)
+        score -= 3.0 * closest_scared_ghost
+
+    score -= 20.0 * remaining_capsules
+    score -= 3.0 * remaining_food
+    return score
 
 # Abbreviation
 better = betterEvaluationFunction
