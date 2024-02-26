@@ -162,8 +162,11 @@ class MinimaxAgent(MultiAgentSearchAgent):
         "*** YOUR CODE HERE ***"
         ghosts = gameState.getNumAgents() - 1
         return self.maximize(gameState, 1, ghosts)
-        
-    def maximize(self, gameState, depth, numGhosts):
+    
+    """
+    Pacman's turn to maximize its utility. Considers all legal actions for Pacman and recursively calls minimize for the ghosts
+    """
+    def maximize(self, gameState, depth, ghosts):
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
 
@@ -172,7 +175,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
         
         for action in gameState.getLegalActions(0):
             successor = gameState.generateSuccessor(0, action)
-            adversaryValue = self.minimize(successor, depth, 1, numGhosts)
+            adversaryValue = self.minimize(successor, depth, 1, ghosts)
             if adversaryValue > maxValue:
                 maxValue = adversaryValue
                 bestAction = action
@@ -181,21 +184,25 @@ class MinimaxAgent(MultiAgentSearchAgent):
             return maxValue
 
         return bestAction
-
-    def minimize(self, gameState, depth, agentIndex, numGhosts):
+    
+    """
+    Ghosts' turn to minimize Pacman's utility. It considers all legal actions for the current ghost and recursively calls either
+    maximize for the next ghost or minimize for the next action of the same ghost
+    """
+    def minimize(self, gameState, depth, agentIndex, ghosts):
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
 
         minValue = float('inf')
         for action in gameState.getLegalActions(agentIndex):
             successor = gameState.generateSuccessor(agentIndex, action)
-            if agentIndex == numGhosts:
+            if agentIndex == ghosts:
                 if depth < self.depth:
-                    minValue = min(minValue, self.maximize(successor, depth + 1, numGhosts))
+                    minValue = min(minValue, self.maximize(successor, depth + 1, ghosts))
                 else:
                     minValue = min(minValue, self.evaluationFunction(successor))
             else:
-                minValue = min(minValue, self.minimize(successor, depth, agentIndex + 1, numGhosts))
+                minValue = min(minValue, self.minimize(successor, depth, agentIndex + 1, ghosts))
         
         return minValue
 
@@ -209,10 +216,14 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        numGhosts = gameState.getNumAgents() - 1
-        return self.maximize(gameState, 1, numGhosts, float('-inf'), float('inf'))
+        ghosts = gameState.getNumAgents() - 1
+        return self.maximize(gameState, 1, ghosts, float('-inf'), float('inf'))
     
-    def maximize(self, gameState, depth, numGhosts, alpha, beta):
+    """
+    Pacman's turn to maximize its utility. Considers all legal actions for Pacman and recursively calls minimize for the ghosts.
+    Alpha is updated with the maximum value encountered, and pruning occurs if the maximum value exceeds beta.
+    """
+    def maximize(self, gameState, depth, ghosts, alpha, beta):
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
 
@@ -221,7 +232,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         
         for action in gameState.getLegalActions(0):
             successor = gameState.generateSuccessor(0, action)
-            adversaryValue = self.minimize(successor, depth, 1, numGhosts, alpha, beta)
+            adversaryValue = self.minimize(successor, depth, 1, ghosts, alpha, beta)
             if maxValue < adversaryValue:
                 maxValue = adversaryValue
                 bestAction = action
@@ -235,7 +246,12 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
         return bestAction
 
-    def minimize(self, gameState, depth, agentIndex, numGhosts, alpha, beta):
+    """
+    Ghosts' turn to minimize Pacman's utility. Considers all legal actions for the current ghost and recursively calls either
+    maximize for the next ghost or minimize for the next action of the same ghost. Beta is updated with the minimum value encountered,
+    and pruning occurs if the minimum value goes below alpha.
+    """
+    def minimize(self, gameState, depth, agentIndex, ghosts, alpha, beta):
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
         
@@ -243,17 +259,16 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         
         for action in gameState.getLegalActions(agentIndex):
             successor = gameState.generateSuccessor(agentIndex, action)
-            if agentIndex == numGhosts:
+            if agentIndex == ghosts:
                 if depth < self.depth:
-                    minValue = min(minValue, self.maximize(successor, depth + 1, numGhosts, alpha, beta))
+                    minValue = min(minValue, self.maximize(successor, depth + 1, ghosts, alpha, beta))
                 else:
                     minValue = min(minValue, self.evaluationFunction(successor))
             else:
-                minValue = min(minValue, self.minimize(successor, depth, agentIndex + 1, numGhosts, alpha, beta))
+                minValue = min(minValue, self.minimize(successor, depth, agentIndex + 1, ghosts, alpha, beta))
             
             if minValue < alpha:
                 return minValue
-            
             beta = min(beta, minValue)
         
         return minValue      
@@ -271,10 +286,14 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        numGhosts = gameState.getNumAgents() - 1
-        return self.maximize(gameState, 1, numGhosts)
-    
-    def maximize(self, gameState, depth, numGhosts):
+        ghosts = gameState.getNumAgents() - 1
+        return self.maximize(gameState, 1, ghosts)
+
+    """
+    Pacman's turn to maximize its utility. Considers all legal actions for Pacman and recursively calls expectimax for the ghosts.
+    It keeps track of the maximum value encountered and the corresponding action.
+    """
+    def maximize(self, gameState, depth, ghosts):
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
         
@@ -283,7 +302,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         
         for action in gameState.getLegalActions(0):
             successor = gameState.generateSuccessor(0, action)
-            adversaryValue = self.getExpectValue(successor, depth, 1, numGhosts)
+            adversaryValue = self.expectimax(successor, depth, 1, ghosts)
             
             if maxValue < adversaryValue:
                 maxValue = adversaryValue
@@ -294,25 +313,30 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         
         return bestAction
     
-    def getExpectValue(self, gameState, depth, agentIndex, numGhosts):
+    """
+    Ghosts' turn to take the expected value of their possible moves. Considers all legal actions for the current ghost and
+    recursively calls either maximize for the next ghost or expectimax for the next action of the same ghost. The expected value
+    is computed as the average of the values weighted by the probability of each action.
+    """
+    def expectimax(self, gameState, depth, agentIndex, ghosts):
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
         
-        expectValue = 0
+        expectedValue = 0
         legalActions = gameState.getLegalActions(agentIndex)
-        successorProbability = 1.0 / len(legalActions)
+        probability = 1/len(legalActions)
         
         for action in legalActions:
             successor = gameState.generateSuccessor(agentIndex, action)
-            if agentIndex == numGhosts:
+            if agentIndex == ghosts:
                 if depth < self.depth:
-                    expectValue += successorProbability * self.maximize(successor, depth + 1, numGhosts)
+                    expectedValue += self.maximize(successor, depth + 1, ghosts) * probability
                 else:
-                    expectValue += successorProbability * self.evaluationFunction(successor)
+                    expectedValue += self.evaluationFunction(successor) * probability 
             else:
-                expectValue += successorProbability * self.getExpectValue(successor, depth, agentIndex + 1, numGhosts)
+                expectedValue += self.expectimax(successor, depth, agentIndex + 1, ghosts) * probability 
         
-        return expectValue
+        return expectedValue
 
 def betterEvaluationFunction(currentGameState):
     """
@@ -355,19 +379,7 @@ def betterEvaluationFunction(currentGameState):
             enemyGhosts.append(ghost)
         else:
             scaredGhosts.append(ghost)
-
-    ghostCoords = []
-    for enemyGhost in enemyGhosts:
-        ghostCoords.append(enemyGhost.getPosition())
-
-    if len(ghostCoords) > 0:
-        enemyGhostDistances = []
-        for enemyGhost in ghostCoords:
-            enemyGhostDistances.append(manhattanDistance(currPos, enemyGhost))
             
-        closestGhost = min(enemyGhostDistances)
-        score -= 3.0 * (1/closestGhost)
-
     scaredGhostCoords = []
     for scaredGhost in scaredGhosts:
         scaredGhostCoords.append(scaredGhost.getPosition())
@@ -379,6 +391,18 @@ def betterEvaluationFunction(currentGameState):
             
         closestScaredGhost = min(scaredGhostDistances)
         score -= 3.0 * closestScaredGhost
+        
+    ghostCoords = []
+    for enemyGhost in enemyGhosts:
+        ghostCoords.append(enemyGhost.getPosition())
+
+    if len(ghostCoords) > 0:
+        enemyGhostDistances = []
+        for enemyGhost in ghostCoords:
+            enemyGhostDistances.append(manhattanDistance(currPos, enemyGhost))
+            
+        closestGhost = min(enemyGhostDistances)
+        score -= 3.0 * (1/closestGhost)
 
     score -= 20.0 * len(powerCapsules)
     score -= 3.0 * len(foodCoords)
