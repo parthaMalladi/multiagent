@@ -74,15 +74,15 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
+        score = successorGameState.getScore()
         ghostDistance = 1
         ghostCoords = successorGameState.getGhostPositions()
-        closeToGhost = 0
         
         for ghost in ghostCoords:
             dist = manhattanDistance(newPos, ghost)
             ghostDistance += dist
             if dist < 2:
-                closeToGhost += 1
+                score -= 1
                         
         foodCoords = newFood.asList()
         foodDistances = []
@@ -91,14 +91,14 @@ class ReflexAgent(Agent):
             foodDistances.append(manhattanDistance(newPos, coord))
         
         closestDistanceToFood = float('inf')
-        if (len(foodDistances) > 0):
+        if len(foodDistances) > 0:
             closestDistanceToFood = min(foodDistances)
         
         """
         Main idea is to keep pacman close to food by adding to the score when he is near food and penalizing
-        pacman heavilty when he is closer than 2 blocks to a ghost so that he avoids ghosts.
+        pacman heavily when he is closer than 2 blocks to a ghost so that he avoids ghosts.
         """
-        return successorGameState.getScore() + (1/closestDistanceToFood) - (1/ghostDistance) - closeToGhost
+        return score + (1/closestDistanceToFood) - (1/ghostDistance)
     
 
 def scoreEvaluationFunction(currentGameState):
@@ -275,7 +275,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
-      Your expectimax agent (question 4)
+    Your expectimax agent (question 4)
     """
 
     def getAction(self, gameState):
@@ -349,7 +349,7 @@ def betterEvaluationFunction(currentGameState):
     the score if there is a lot of food remaining on the board so that pacman keeps moving. I subtract the minimum
     distance between pacman and food pellet because it makes pacman get a worse score if he is farther away from food,
     so he will prioritize being near food pellets. I am also tracking the ghost positions and which ghosts are scared.
-    Pacman has a lower penalty if he is farther away from a ghost because I use reciprocal of the manhattan distance
+    Pacman has a lower penalty if he is farther away from a ghost because I use the reciprocal of the manhattan distance
     and subtract it from the game state's score. I also penalize pacman for being far away from a scared ghost, which
     will make pacman prioritize hunting ghosts when they are scared.
     """
@@ -390,7 +390,7 @@ def betterEvaluationFunction(currentGameState):
             scaredGhostDistances.append(manhattanDistance(currPos, scaredGhost))
             
         closestScaredGhost = min(scaredGhostDistances)
-        score -= 3.0 * closestScaredGhost
+        score -= 3 * closestScaredGhost
         
     ghostCoords = []
     for enemyGhost in enemyGhosts:
@@ -402,10 +402,10 @@ def betterEvaluationFunction(currentGameState):
             enemyGhostDistances.append(manhattanDistance(currPos, enemyGhost))
             
         closestGhost = min(enemyGhostDistances)
-        score -= 3.0 * (1/closestGhost)
+        score -= 3 * (1/closestGhost)
 
-    score -= 20.0 * len(powerCapsules)
-    score -= 3.0 * len(foodCoords)
+    score -= 15 * len(powerCapsules)
+    score -= 3 * len(foodCoords)
     return score
 
 # Abbreviation
